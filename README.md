@@ -1,4 +1,4 @@
-# Multi-Agent Systems on Azure
+# Multi-Agent Systems On Azure
 
 Inspired by Dhiba’s *Designing Multi-Agent Systems*, this project demonstrates how to design, coordinate, and deploy intelligent agents in a cloud-native environment. It is both a technical exploration and a portfolio showcase of agent orchestration, lifecycle management, and observability in Azure.
 
