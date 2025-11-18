@@ -45,4 +45,4 @@ docker build -t <acr-name>.azurecr.io/mas:latest . docker push <acr-name>.azurec
 This project demonstrates:
 - Cloud Infrastructure Fluency: Azure-native deployment and monitoring
 - Agentic Systems Expertise: Practical application of Dhiba’s MAS framework
-- Recruiter Signals: Large-scale systems thinking, explainability, and TPM-level visibility
+- Demonstraztes large-scale systems thinking and explainability.
