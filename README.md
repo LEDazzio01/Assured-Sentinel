@@ -22,18 +22,13 @@ Agents → Coordination → API → Deployment → Monitoring
 Clone the repo and install dependencies:
 git clone <your-repo-url> cd multi-agent-azure pip install -r requirements.txt
 
-Code
-
 Run the API locally:
 python api/server.py
-
-Code
 
 ## ☁️ Azure Deployment
 1. Build and push container:
 docker build -t <acr-name>.azurecr.io/mas:latest . docker push <acr-name>.azurecr.io/mas:latest
 
-Code
 2. Deploy to AKS or Azure Container Apps using manifests in `/deployment`
 3. Configure Event Grid or Service Bus for agent messaging
 
