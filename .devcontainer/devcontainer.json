@@ -11,9 +11,10 @@
       },
       "extensions": [
         "ms-python.python",
-        "ms-toolsai.jupyter"
+        "ms-toolsai.jupyter",
+        "charliermarsh.ruff"
       ]
     }
   },
-  "postCreateCommand": "pip install --no-cache-dir numpy scikit-learn mapie semantic-kernel azure-identity openai python-dotenv notebook"
+  "postCreateCommand": "pip install --no-cache-dir numpy scikit-learn mapie semantic-kernel azure-identity openai python-dotenv notebook bandit flake8 datasets"
 }
