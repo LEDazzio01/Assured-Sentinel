@@ -47,9 +47,9 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 - **The Guarantee:**  
   
 
-\[
-  P\big(Y_{n+1} \in C(X_{n+1})\big) \geq 1 - \alpha
-  \]
+  \[
+    P\big(Y_{n+1} \in C(X_{n+1})\big) \geq 1 - \alpha
+    \]
 
 
 
