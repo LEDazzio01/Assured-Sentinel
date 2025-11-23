@@ -53,7 +53,7 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 
 
 
-We target \(\alpha = 0.1\), providing **90% confidence** that accepted code belongs to the set of secure outputs.
+  We target \(\alpha = 0.1\), providing **90% confidence** that accepted code belongs to the set of secure outputs.
 
 ---
 
