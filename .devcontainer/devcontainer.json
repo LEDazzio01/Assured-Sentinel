@@ -16,5 +16,5 @@
       ]
     }
   },
-  "postCreateCommand": "pip install --no-cache-dir numpy scikit-learn mapie semantic-kernel azure-identity openai python-dotenv notebook bandit flake8 datasets"
+  "postCreateCommand": "pip install --no-cache-dir numpy scikit-learn mapie semantic-kernel azure-identity openai python-dotenv notebook bandit flake8 datasets streamlit matplotlib"
 }
