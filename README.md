@@ -1,4 +1,4 @@
-Assured Sentinel: Probabilistic Guardrails for Generative Code
+##Assured Sentinel: Probabilistic Guardrails for Generative Code
 
 Status: Phase 1: Build (Active)
 Architecture: Multi-Agent System (MAS) + Split Conformal Prediction (SCP)
