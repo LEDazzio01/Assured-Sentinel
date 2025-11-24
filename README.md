@@ -1,4 +1,4 @@
-# Assured Sentinel: Probabilistic Guardrails for Generative Code
+# Assured Sentinel: Probabilistic Guardrails for Generative Code 
 
 **Status:** Phase 1 – Build (Active)  
 **Architecture:** Multi-Agent System (MAS) + Split Conformal Prediction (SCP)
@@ -6,11 +6,9 @@
 ---
 
 ## 🚀 The Mission
-The rapid ascendancy of **Large Language Models (LLMs)** has introduced a profound challenge: the inherent uncertainty of probabilistic outputs.  
-While LLMs accelerate development, they cannot inherently quantify the risk of the code they generate.
+The rapid ascendancy of **Large Language Models (LLMs)** has introduced a profound challenge: the inherent uncertainty of probabilistic outputs. While LLMs accelerate development, they cannot inherently quantify the risk of the code they generate.
 
-**Assured Sentinel** bridges the gap between stochastic generation and deterministic safety.  
-It is not merely a linter; it is a system that imposes **mathematical safety guarantees** on generative models using **Split Conformal Prediction (SCP).**
+**Assured Sentinel** bridges the gap between stochastic generation and deterministic safety. It is not merely a linter; it is a system that imposes **mathematical safety guarantees** on generative models using **Split Conformal Prediction (SCP).**
 
 ---
 
@@ -75,13 +73,12 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 
 ## 🔑 Why It Matters
 - **Beyond Linters:** Provides *probabilistic safety guarantees* instead of heuristic checks.  
-- **Recruiter Signal:** Demonstrates mastery of **AI reliability, security, and explainability** in generative systems.  
 - **Enterprise Relevance:** Aligns with Responsible AI and cloud infrastructure reliability themes.  
 
 ---
 
 ## 📖 References
-- Vovk, V., Gammerman, A., & Shafer, G. *Algorithmic Learning in a Random World* (2005)  
+- Applied Conformal Prediction by Valeriy Manokhin
 - HumanEval & MBPP datasets for calibration baselines  
 - Bandit: Python Security Linter  
 
