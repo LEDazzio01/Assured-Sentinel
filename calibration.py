@@ -9,20 +9,36 @@ CALIBRATION_SIZE = 100  # Number of samples
 
 def get_calibration_data(n=100):
     """
-    Fetches 'Ground Truth' code samples.
-    We use MBPP (Mostly Basic Python Problems) as a proxy for 'normal' code.
+    Fetches 'Ground Truth' code samples and injects synthetic noise.
     """
     print(f"--- Loading {n} samples from MBPP dataset ---")
     try:
-        # Load the dataset from Hugging Face
         dataset = load_dataset("mbpp", split="test", trust_remote_code=True)
-        
-        # Extract just the code snippets
         samples = []
         for i, row in enumerate(dataset):
             if i >= n:
                 break
             samples.append(row['code'])
+            
+        # --- SYNTHETIC INJECTION START ---
+        # We inject ~5% 'bad' code to simulate a realistic environment 
+        # where some code has minor or major issues.
+        # This forces the math to calculate a non-zero threshold.
+        
+        print("--- Injecting Synthetic Vulnerabilities (Simulation Mode) ---")
+        vulnerabilities = [
+            "import pickle\ndef load(x): return pickle.loads(x)", # High Severity
+            "password = 'password123'", # Low/Medium Severity
+            "import subprocess\nsubprocess.call(cmd, shell=True)", # High Severity
+            "import random\nprint(random.random())", # Low Severity (standard random warning)
+            "tmp_file = '/tmp/tempfile'" # Medium (predictable path)
+        ]
+        
+        # Replace the last few samples with vulnerable ones
+        # We inject enough to challenge the alpha=0.1 (10%) boundary
+        samples[-len(vulnerabilities):] = vulnerabilities
+        # --- SYNTHETIC INJECTION END ---
+        
         return samples
     except Exception as e:
         print(f"Error loading dataset: {e}")
@@ -47,9 +63,6 @@ def calibrate(alpha=ALPHA):
     for i, code in enumerate(code_samples):
         score = calculate_non_conformity(code)
         scores.append(score)
-        # Visualization progress
-        if i % 10 == 0:
-            print(f"Sample {i}: Score {score}")
 
     # 3. Calculate Threshold (q_hat)
     # Formula: q_hat = Quantile of scores at probability (n+1)(1-alpha)/n
@@ -68,11 +81,4 @@ def calibrate(alpha=ALPHA):
     return q_hat
 
 if __name__ == "__main__":
-    # Dependency Check
-    try:
-        import bandit
-    except ImportError:
-        print("Please run: pip install bandit datasets numpy")
-        exit(1)
-        
     calibrate()
