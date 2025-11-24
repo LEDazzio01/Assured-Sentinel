@@ -78,7 +78,7 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 ---
 
 ## 📖 References
-- Vovk, V., Gammerman, A., & Shafer, G. *Algorithmic Learning in a Random World* (2005)  
+- Applied Conformal Prediction by Valeriy Manokhin
 - HumanEval & MBPP datasets for calibration baselines  
 - Bandit: Python Security Linter  
 
