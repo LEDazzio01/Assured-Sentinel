@@ -21,26 +21,23 @@ def get_calibration_data(n=100):
                 break
             samples.append(row['code'])
             
-        # --- AGGRESSIVE SYNTHETIC INJECTION ---
-        # To force a non-zero threshold at Alpha=0.1 (10%), 
-        # we must inject >10% vulnerable code. 
-        # We will inject 20% (20 samples) to shift the distribution.
+        # --- AGGRESSIVE SYNTHETIC INJECTION (20%) ---
+        # We inject 20 bad samples (20%) to exceed the 10% Alpha threshold.
+        # This guarantees the 'bad' scores push the quantile above 0.0.
         
         print("--- Injecting 20% Synthetic Vulnerabilities ---")
         
-        # A mix of High (1.0), Medium (0.5), and Low (0.1) issues
         bad_patterns = [
-            "import pickle\npickle.loads(x)", # High
-            "password = 'secret'", # Medium
-            "eval(user_input)", # High
-            "import random\nprint(random.random())", # Low
-            "tmp = '/tmp/insecure'" # Medium
+            "import pickle\npickle.loads(x)", # High Severity
+            "password = 'secret'", # Medium Severity
+            "eval(user_input)", # High Severity
+            "import random\nprint(random.random())", # Low Severity
+            "tmp = '/tmp/insecure'" # Medium Severity
         ]
         
-        # Cycle through bad patterns to fill 20 spots
+        # Overwrite the last 20 samples
         injection_count = 20
         for i in range(1, injection_count + 1):
-            # Overwrite the last N samples
             pattern = bad_patterns[i % len(bad_patterns)]
             samples[-i] = pattern
             
@@ -50,17 +47,12 @@ def get_calibration_data(n=100):
         return []
 
 def calibrate(alpha=ALPHA):
-    """
-    The Mathematical Core: Calculates q_hat.
-    """
     print(f"\n--- Starting Calibration Sequence (Alpha={alpha}) ---")
     
-    # 1. Load Data
     code_samples = get_calibration_data(CALIBRATION_SIZE)
     if not code_samples:
         return 0.0
 
-    # 2. Score Data
     scores = []
     print(f"Scoring {len(code_samples)} samples...")
     
@@ -68,8 +60,7 @@ def calibrate(alpha=ALPHA):
         score = calculate_non_conformity(code)
         scores.append(score)
 
-    # 3. Calculate Threshold (q_hat)
-    # Finite Sample Correction
+    # Mathematical Correction
     n = len(scores)
     q_level = np.ceil((n + 1) * (1 - alpha)) / n
     q_level = min(1.0, q_level)
@@ -81,7 +72,6 @@ def calibrate(alpha=ALPHA):
     print(f"Alpha: {alpha}")
     print(f"Threshold (q_hat): {q_hat}")
     
-    # Save this value! You will need it for Day 4 (The Commander).
     return q_hat
 
 if __name__ == "__main__":
