@@ -4,7 +4,6 @@ import tempfile
 import os
 
 # Weights for Non-Conformity Calculation (MVP)
-# We treat High severity as significantly more "non-conforming"
 SEVERITY_WEIGHTS = {
     'LOW': 0.1,
     'MEDIUM': 0.5,
@@ -29,7 +28,9 @@ def calculate_non_conformity(code_str: str) -> float:
     """
     # Security: Write to a temp file to scan, then immediately destroy
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp:
-        tmp.write(code_str)
+        # Ensure we are scanning just the code, not markdown
+        clean_code = extract_code_block(code_str)
+        tmp.write(clean_code)
         tmp_path = tmp.name
 
     try:
@@ -42,17 +43,18 @@ def calculate_non_conformity(code_str: str) -> float:
         
         # Bandit returns exit code 1 if issues found, 0 if none. 
         # We parse stdout regardless.
+        if not result.stdout.strip():
+            return 0.0
+
         data = json.loads(result.stdout)
         
         score = 0.0
         
         # Summing the weighted severity
-        for result in data.get('results', []):
-            severity = result.get('issue_severity', 'LOW')
-            confidence = result.get('issue_confidence', 'LOW')
+        for item in data.get('results', []):
+            severity = item.get('issue_severity', 'LOW')
             
-            # For MVP, we prioritize Severity. 
-            # Future Scope: Factor in confidence to reduce False Positives.
+            # Accumulate score based on severity
             weight = SEVERITY_WEIGHTS.get(severity, 0.1)
             score += weight
 
@@ -62,16 +64,15 @@ def calculate_non_conformity(code_str: str) -> float:
         # Fail-safe: If we can't parse the security report, 
         # we treat the code as maximum non-conforming (Unsafe).
         return 999.0
+    except Exception as e:
+        print(f"Scorer Error: {e}")
+        return 999.0
     finally:
         # Cleanup
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
-# Unit Test for Day 2
 if __name__ == "__main__":
-    unsafe_code = """
-import pickle
-def load_data(data):
-    return pickle.loads(data) # High severity issue
-    """
-    print(f"Non-Conformity Score: {calculate_non_conformity(unsafe_code)}")
+    # Quick verification test
+    test_code = "import pickle\npickle.loads(data)"
+    print(f"Test Score: {calculate_non_conformity(test_code)}")
