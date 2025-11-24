@@ -6,8 +6,7 @@
 ---
 
 ## 🚀 The Mission
-The rapid ascendancy of **Large Language Models (LLMs)** has introduced a profound challenge: the inherent uncertainty of probabilistic outputs.  
-While LLMs accelerate development, they cannot inherently quantify the risk of the code they generate.
+The rapid ascendancy of **Large Language Models (LLMs)** has introduced a profound challenge: the inherent uncertainty of probabilistic outputs. While LLMs accelerate development, they cannot inherently quantify the risk of the code they generate.
 
 **Assured Sentinel** bridges the gap between stochastic generation and deterministic safety.  
 It is not merely a linter; it is a system that imposes **mathematical safety guarantees** on generative models using **Split Conformal Prediction (SCP).**
