@@ -75,7 +75,6 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 
 ## 🔑 Why It Matters
 - **Beyond Linters:** Provides *probabilistic safety guarantees* instead of heuristic checks.  
-- **Recruiter Signal:** Demonstrates mastery of **AI reliability, security, and explainability** in generative systems.  
 - **Enterprise Relevance:** Aligns with Responsible AI and cloud infrastructure reliability themes.  
 
 ---
