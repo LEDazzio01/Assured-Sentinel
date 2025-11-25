@@ -86,7 +86,7 @@ We strictly adhere to **Split Conformal Prediction (SCP).**
 ## 📖 References
 - Applied Conformal Prediction by Valeriy Manokhin
 - HumanEval & MBPP datasets for calibration baselines  
-- Bandit: Python Security Linter  
+- Bandit: Python Security Linter   
 
 ---
 
