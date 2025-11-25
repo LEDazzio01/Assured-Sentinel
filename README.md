@@ -2,6 +2,11 @@
 
 **Status:** Phase 1 – Build - Complete!
 
+<p align="center">
+  <img src="Screenshot 2025-11-24 185015.png" width="75%">
+</p>
+<p align="center"><em> </em></p>
+
 **Architecture:** Multi-Agent System (MAS) + Split Conformal Prediction (SCP)
 
 ---
