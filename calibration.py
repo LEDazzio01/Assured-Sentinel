@@ -1,7 +1,9 @@
 import numpy as np
 from datasets import load_dataset
-from scorer import calculate_non_conformity
+# FIX: Import the correct function name
+from scorer import calculate_score 
 import os
+import pickle # Added pickle to save the file at the end
 
 # Configuration
 ALPHA = 0.1  # 10% Risk Tolerance
@@ -57,7 +59,8 @@ def calibrate(alpha=ALPHA):
     print(f"Scoring {len(code_samples)} samples...")
     
     for i, code in enumerate(code_samples):
-        score = calculate_non_conformity(code)
+        # FIX: Call the correct function name
+        score = calculate_score(code) 
         scores.append(score)
 
     # Mathematical Correction
@@ -72,7 +75,13 @@ def calibrate(alpha=ALPHA):
     print(f"Alpha: {alpha}")
     print(f"Threshold (q_hat): {q_hat}")
     
+    # FIX: Save the data so the dashboard can find it
+    with open("calibration_data.pkl", "wb") as f:
+        pickle.dump({"q_hat": q_hat, "scores": scores}, f)
+    print("--- Data Saved to calibration_data.pkl ---")
+    
     return q_hat
 
 if __name__ == "__main__":
     calibrate()
+    
