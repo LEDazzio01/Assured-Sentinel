@@ -1,42 +1,42 @@
-🛡️ Assured Sentinel
+# 🛡️ Assured Sentinel
 
 Probabilistic Guardrails for Generative Code
 
-🚀 The Mission
+# 🚀 The Mission
 
 The rapid ascendancy of Large Language Models (LLMs) has introduced a profound challenge: the inherent uncertainty of probabilistic outputs. While LLMs accelerate development, they cannot inherently quantify the risk of the code they generate.
 
 Assured Sentinel bridges the gap between stochastic generation and deterministic safety. It is not merely a linter; it is a system that imposes mathematical safety guarantees on generative models using Split Conformal Prediction (SCP).
 
-🏛️ Architectural Overview
+# 🏛️ Architectural Overview
 
 The system employs a Two-Agent Pattern to decouple generation from verification, preventing the self-delusion common in single-agent loops.
 
-🧠 The Analyst (Generator)
+ - 🧠 The Analyst (Generator)
 
-Role: The stochastic motor
+    Role: The stochastic motor
+    
+    Behavior: High-temperature (0.8), high-entropy generation
+    
+    Objective: Propose creative solutions to user queries
+    
+    Stack: Azure OpenAI (gpt-4o) via Semantic Kernel
 
-Behavior: High-temperature (0.8), high-entropy generation
+ - 🛡️ The Commander (Guardrail)
 
-Objective: Propose creative solutions to user queries
+    Role: The deterministic logic gate
+    
+    Behavior: Strictly procedural and statistical
+    
+    Mechanism:
+    
+    Calculates a Non-Conformity Score (Inverse Security Score) using static analysis (simulated or bandit).
+    
+    Compares against a pre-calibrated threshold ($\hat{q}$).
+    
+    Guarantee: Ensures accepted code meets a specific risk tolerance ($1 - \alpha$) with statistical validity.
 
-Stack: Azure OpenAI (gpt-4o) via Semantic Kernel
-
-🛡️ The Commander (Guardrail)
-
-Role: The deterministic logic gate
-
-Behavior: Strictly procedural and statistical
-
-Mechanism:
-
-Calculates a Non-Conformity Score (Inverse Security Score) using static analysis (simulated or bandit).
-
-Compares against a pre-calibrated threshold ($\hat{q}$).
-
-Guarantee: Ensures accepted code meets a specific risk tolerance ($1 - \alpha$) with statistical validity.
-
-🛠️ Quick Start
+# 🛠️ Quick Start
 
 Prerequisites
 
