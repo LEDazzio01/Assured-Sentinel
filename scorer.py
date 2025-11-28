@@ -4,74 +4,70 @@ import os
 import json
 import logging
 
+# Configure logger just like in commander.py
 logger = logging.getLogger("Commander")
 
 def calculate_score(code_snippet: str) -> float:
     """
-    Calculates the Non-Conformity Score using Bandit (SAST).
+    REVISED (Day 4): Deterministic Security Scoring via Bandit.
     
-    Score Mapping:
-    - 1.0: HIGH severity issues found (Immediate Reject)
-    - 0.5: MEDIUM severity issues found
-    - 0.1: LOW/Undefined issues found
-    - 0.0: Clean code
-    
-    Args:
-        code_snippet (str): The Python code to analyze.
-        
     Returns:
-        float: A deterministic score between 0.0 and 1.0.
+        float: 
+            0.0 (Secure) 
+            0.1 - 0.9 (Low/Medium Risk)
+            1.0 (High Risk - Immediate Rejection)
     """
-    # Create a temporary file to hold the code snippet
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+    # 1. Create a temporary file to hold the Analyst's code
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as temp_file:
         temp_file.write(code_snippet)
         temp_file_path = temp_file.name
 
     try:
-        # Run bandit as a subprocess
-        # -f json: Output as JSON
-        # -q: Quiet mode
-        # --exit-zero: Don't fail the build, just report
+        # 2. Run Bandit Analysis
+        # -f json: Machine readable output
+        # -q: Quiet (no banner)
+        # --exit-zero: Ensure script doesn't crash on finding errors
         result = subprocess.run(
             ['bandit', '-f', 'json', '-q', '--exit-zero', temp_file_path],
             capture_output=True,
             text=True
         )
         
-        # Parse the JSON output
-        report = json.loads(result.stdout)
+        # 3. Parse Results
+        try:
+            report = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            logger.error("Failed to parse Bandit JSON output.")
+            return 1.0 # Fail Safe (Reject if we can't verify)
+
         results = report.get('results', [])
         
         if not results:
-            return 0.0
+            return 0.0 # Clean Code
 
-        # Determine the highest severity present
+        # 4. Deterministic Scoring Logic
         max_severity_score = 0.0
         
         for issue in results:
             severity = issue.get('issue_severity', 'LOW')
-            confidence = issue.get('issue_confidence', 'LOW')
             
-            # Simple scoring logic
             if severity == 'HIGH':
-                current_score = 1.0
+                return 1.0 # Immediate max score
             elif severity == 'MEDIUM':
                 current_score = 0.5
             else:
                 current_score = 0.1
             
-            # We take the maximum risk found in the snippet
             if current_score > max_severity_score:
                 max_severity_score = current_score
 
         return max_severity_score
 
     except Exception as e:
-        logger.error(f"Scorer failed to run Bandit: {e}")
-        # Fail open or closed? For safety, we fail closed (High Risk) if the tool breaks.
-        return 1.0
+        logger.error(f"Scorer System Failure: {e}")
+        return 1.0 # Fail Safe
         
     finally:
-        # Cleanup
+        # 5. Cleanup
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
