@@ -4,17 +4,26 @@ import asyncio
 import os
 import pickle
 from commander import Commander
-from analyst import generate_code
+from analyst import Analyst  # Import the new Class
 
 # Page Config
 st.set_page_config(page_title="Assured Sentinel", layout="wide")
 st.title("🛡️ Assured Sentinel: Conformal Security Guardrail")
 
+# --- CACHED RESOURCES (The Fix) ---
+@st.cache_resource
+def get_commander(threshold):
+    """Initializes Commander once per session/threshold change."""
+    return Commander(default_threshold=threshold)
+
+@st.cache_resource
+def get_analyst():
+    """Initializes Analyst connection once."""
+    return Analyst()
+
 # Sidebar: Configuration
 st.sidebar.header("Configuration")
 threshold_input = st.sidebar.slider("Risk Threshold (alpha)", 0.0, 1.0, 0.15)
-model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
-st.sidebar.info(f"Model: {model_name}")
 
 # Load Calibration Data (Visualization)
 if os.path.exists("calibration_data.pkl"):
@@ -33,8 +42,9 @@ else:
 query = st.text_input("Enter a coding task:", "Write a function to calculate factorial.")
 
 if st.button("Generate & Assure"):
-    # 1. Initialize Commander
-    commander = Commander(default_threshold=threshold_input)
+    # 1. Get Resources
+    commander = get_commander(threshold_input)
+    analyst = get_analyst()
     
     col1, col2 = st.columns(2)
     
@@ -45,7 +55,8 @@ if st.button("Generate & Assure"):
         
         # Run Async Code Generation
         try:
-            candidate_code = asyncio.run(generate_code(query))
+            # We use the class method now
+            candidate_code = asyncio.run(analyst.generate(query))
             st.code(candidate_code, language='python')
             status_text.text("Generation Complete.")
         except Exception as e:
