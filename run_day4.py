@@ -1,53 +1,82 @@
-import asyncio
-import time
 import os
-from commander import Commander
-# Import the function directly instead of a class
-from analyst import generate_code 
+import asyncio
+import semantic_kernel as sk
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion, AzureChatPromptExecutionSettings
+from semantic_kernel.functions import KernelArguments
 
-async def main():
-    print("=== ASSURED SENTINEL: DAY 4 BUILD (ASYNC INTEGRATION) ===")
-    
-    # 1. Check Environment (Crucial for Semantic Kernel)
-    if not os.getenv("AZURE_OPENAI_API_KEY"):
-        print("[!] CRITICAL: AZURE_OPENAI_API_KEY is not set.")
-        print("    The Analyst will fail. Please set your env vars.")
-        return
+class Analyst:
+    def __init__(self):
+        """Initializes the Semantic Kernel ONCE."""
+        self.kernel = sk.Kernel()
+        
+        # Load Env Vars
+        self.deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+        self.endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        self.api_key = os.getenv("AZURE_OPENAI_API_KEY")
 
-    # 2. Initialize The Commander (The Logic Gate)
-    # We use a default threshold of 0.15 for this MVP test.
-    commander = Commander(default_threshold=0.15)
-    
-    # 3. Define User Query
-    # We use a prompt likely to trigger "safe" code to test the happy path first.
-    query = "Write a Python function to calculate the factorial of a number."
-    
-    # 4. Execution Flow
-    print(f"\n>>> User: {query}")
-    
-    # Step A: Generation (The Analyst)
-    # We await the semantic kernel function
-    try:
-        candidate_code = await generate_code(query)
-        print(f"\n[Analyst] Proposed Code:\n{'-'*20}\n{candidate_code.strip()}\n{'-'*20}")
-    except Exception as e:
-        print(f"\n[!] Analyst Failed: {e}")
-        return
-    
-    # Step B: Verification (The Commander)
-    print("\n[Commander] Verifying...")
-    decision = commander.verify(candidate_code)
-    
-    # Step C: Decision Output
-    print(f"\n>>> Final Decision: {decision['status']}")
-    print(f"    Details: {decision['reason']}")
-    print(f"    Metrics: Score={decision['score']} | Threshold={decision['threshold']}")
+        if not all([self.deployment, self.endpoint, self.api_key]):
+            raise ValueError("CRITICAL: Missing Azure OpenAI environment variables.")
 
-    if decision['status'] == "REJECT":
-        print("\n[System] 🛑 STOP. Trigger Correction Loop (Day 5).")
-    else:
-        print("\n[System] ✅ PASS. Code delivered to User.")
+        self.service_id = "analyst"
+        
+        # Add Service (One-time setup)
+        self.kernel.add_service(
+            AzureChatCompletion(
+                service_id=self.service_id,
+                deployment_name=self.deployment,
+                endpoint=self.endpoint,
+                api_key=self.api_key
+            )
+        )
+        
+        # Configure Function
+        self._configure_function()
+
+    def _configure_function(self):
+        """Sets up the persona and high-temp settings."""
+        # [cite_start]High temperature (0.8) to drive stochastic proposal generation [cite: 1164]
+        req_settings = AzureChatPromptExecutionSettings(service_id=self.service_id)
+        req_settings.temperature = 0.8
+        req_settings.top_p = 0.95
+
+        prompt_template = """
+        SYSTEM ROLE:
+        You are a Senior Python Engineer. You act as 'The Analyst'.
+        Your goal is to write functional, efficient Python code to solve the user's problem.
+        Do not explain the code excessively. Provide the code block clearly.
+        
+        USER REQUEST:
+        {{$input}}
+        """
+
+        self.analyst_function = self.kernel.add_function(
+            plugin_name="AnalystPlugin",
+            function_name="generate_code",
+            prompt=prompt_template,
+            prompt_execution_settings=req_settings
+        )
+
+    async def generate(self, user_request: str) -> str:
+        """Invokes the kernel with the user request."""
+        print(f"--- Analyst (High Temp) Generating Solution for: '{user_request}' ---")
+        
+        result = await self.kernel.invoke(
+            self.analyst_function,
+            KernelArguments(input=user_request)
+        )
+        return str(result)
+
+# --- BACKWARD COMPATIBILITY WRAPPER ---
+# This ensures run_day4.py and run_day5.py still work without modification.
+_global_analyst = None
+
+async def generate_code(user_request: str):
+    global _global_analyst
+    if _global_analyst is None:
+        _global_analyst = Analyst()
+    return await _global_analyst.generate(user_request)
 
 if __name__ == "__main__":
-    # We use asyncio to run the async main loop
-    asyncio.run(main())
+    # Test the class directly
+    analyst = Analyst()
+    print(asyncio.run(analyst.generate("Write a hello world function.")))
