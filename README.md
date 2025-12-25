@@ -65,9 +65,9 @@ Output: Generates `calibration_data.pkl` containing the calculated safety thresh
 
 ### Run the Sentinel
 
-Execute the main event loop:
+Execute the main event loop with the full correction loop:
 ```bash
-python run_day4.py
+python run_day5.py
 ```
 
 ### Run the Dashboard
