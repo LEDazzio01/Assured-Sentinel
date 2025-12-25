@@ -38,93 +38,90 @@ The system employs a **Two‑Agent Pattern** to decouple generation from verific
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/assured-sentinel.git
-cd assured-sentinel
-``` 
+git clone https://github.com/LEDazzio01/Assured-Sentinel.git
+cd Assured-Sentinel
 
 # Install dependencies
-```
 pip install -r requirements.txt
 ```
 
+### Configuration
 
-# Configuration
-
-Create a .env file in the root directory
-```
+Create a `.env` file in the root directory:
+```bash
 AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
 AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
 AZURE_OPENAI_API_KEY="your-key-here"
 ```
 
-# Calibration (One‑Time Setup)
+### Calibration (One‑Time Setup)
 
-Run calibration to establish safety threshold (q_hat)
-```
+Run calibration to establish safety threshold (q_hat):
+```bash
 python calibration.py
 ```
 
-Output: Generates calibration_data.pkl containing the calculated safety threshold based on (\alpha = 0.1).
+Output: Generates `calibration_data.pkl` containing the calculated safety threshold based on α = 0.1.
 
-# Run the Sentinel
+### Run the Sentinel
 
-Execute the main event loop
-```
+Execute the main event loop:
+```bash
 python run_day4.py
 ```
 
-📂 Project Structure
+### Run the Dashboard
+
+Launch the interactive Streamlit dashboard:
+```bash
+python -m streamlit run dashboard.py
 ```
-assured-sentinel/
+
+## 📂 Project Structure
+```
+Assured-Sentinel/
 ├── analyst.py       # LLM Agent (Azure OpenAI + Semantic Kernel)
 ├── commander.py     # Logic Gate (Conformal Prediction Verifier)
 ├── calibration.py   # Calibration script (calculates q_hat from MBPP)
 ├── scorer.py        # Non-Conformity Measure (NCM) logic
+├── dashboard.py     # Interactive Streamlit dashboard
 ├── run_day4.py      # Main entry point / orchestration loop
+├── run_day5.py      # Alternative orchestration script
 ├── requirements.txt # Project dependencies
 └── README.md        # Documentation
 ```
 
-# 📐 Theoretical Framework
+## 📐 Theoretical Framework
 
 We strictly adhere to Split Conformal Prediction (SCP).
 
- - Calibration Set: A "Ground Truth" dataset (e.g., MBPP) establishes a baseline distribution of code scores.
+- **Calibration Set:** A "Ground Truth" dataset (e.g., MBPP) establishes a baseline distribution of code scores.
 
- - Non‑Conformity Measure (NCM): A scoring function where 0.0 = Secure and 1.0 = Vulnerable.
+- **Non‑Conformity Measure (NCM):** A scoring function where 0.0 = Secure and 1.0 = Vulnerable.
 
-# The Guarantee:
+### The Guarantee:
 
-[ P(Y_{n+1} \in C(X_{n+1})) \geq 1 - \alpha ]
+$$P(Y_{n+1} \in C(X_{n+1})) \geq 1 - \alpha$$
 
-We target (\alpha = 0.1), providing 90% confidence that accepted code belongs to the set of secure outputs.
+We target α = 0.1, providing 90% confidence that accepted code belongs to the set of secure outputs.
 
-# 📊 Roadmap
+## 📊 Roadmap
 
- [x] Phase 1 – Build (MVP):
+- [x] **Phase 1 – Build (MVP):**
+  - Implement Analyst/Commander MAS pattern
+  - Implement NCM scoring logic
+  - Establish calibration set with MBPP
 
- - Implement Analyst/Commander MAS pattern
+- [ ] **Phase 2 – Validate:**
+  - Benchmark SCP thresholds across diverse datasets
+  - Stress‑test against adversarial prompts
 
- - Implement NCM scoring logic
+- [ ] **Phase 3 – Deploy:**
+  - Package as reproducible GitHub Codespace
+  - Integrate with CI/CD pipelines
 
- - Establish calibration set with MBPP
+## 📖 References
 
-[ ] Phase 2 – Validate:
-
- - Benchmark SCP thresholds across diverse datasets
-
- - Stress‑test against adversarial prompts
-
-[ ] Phase 3 – Deploy:
-
- - Package as reproducible GitHub Codespace
-
- - Integrate with CI/CD pipelines
-
-# 📖 References
-
- - Practical Applied Conformal Prediction by Valeriy Manokhin
-
- - HumanEval & MBPP datasets
-
- - Bandit: Python Security Linter
+- *Practical Applied Conformal Prediction* by Valeriy Manokhin
+- HumanEval & MBPP datasets
+- [Bandit](https://bandit.readthedocs.io/): Python Security Linter
