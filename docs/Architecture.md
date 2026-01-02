@@ -367,7 +367,91 @@ def calculate_score(code: str, language: str) -> float:
 
 ---
 
-## 8. Deployment Options
+## 8. Scalability Constraints
+
+This section documents the throughput limits of the current architecture and defines trigger points for architectural evolution.
+
+### 8.1 Current Architecture Limits
+
+| Constraint | Current Limit | Bottleneck | Mitigation |
+|------------|---------------|------------|------------|
+| **Scoring Throughput** | ~100-200 req/s | Temp file I/O + subprocess spawn | Ramdisk or in-memory AST |
+| **LLM Generation** | ~10-50 req/s | Azure OpenAI rate limits | Request pooling, caching |
+| **Memory per Request** | ~50MB peak | Bandit AST parsing | Worker pool with limits |
+| **Concurrent Sessions** | ~10-20 | Python GIL, single process | Multi-process workers |
+
+### 8.2 Latency Breakdown (P50)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    VERIFICATION LATENCY (~500ms)                     │
+├──────────────────┬──────────────────┬──────────────────┬────────────┤
+│ Code Sanitization│  Temp File I/O   │ Bandit Subprocess│   Cleanup  │
+│      ~5ms        │     ~10ms        │     ~480ms       │    ~5ms    │
+└──────────────────┴──────────────────┴──────────────────┴────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │   Bandit Internal       │
+                    ├─────────────────────────┤
+                    │ Process spawn: ~50ms    │
+                    │ File read:     ~5ms     │
+                    │ AST parse:     ~100ms   │
+                    │ Security scan: ~300ms   │
+                    │ JSON output:   ~25ms    │
+                    └─────────────────────────┘
+```
+
+### 8.3 Scale Trigger Points
+
+| Threshold | Trigger | Recommended Action |
+|-----------|---------|-------------------|
+| **>100 req/s** | Temp file I/O saturation | Move to ramdisk (`/dev/shm`) |
+| **>500 req/s** | Subprocess overhead | Migrate to in-memory Bandit API |
+| **>1000 req/s** | Single-process limit | Deploy as microservice with worker pool |
+| **>5000 req/s** | Single-node limit | Horizontal scaling + load balancer |
+| **>10000 req/s** | Database/state bottleneck | Distributed calibration cache |
+
+### 8.4 Production Architecture (Phase 3+)
+
+```
+                            ┌─────────────────────────────────────────┐
+                            │           LOAD BALANCER                 │
+                            │         (nginx / AWS ALB)               │
+                            └───────────────┬─────────────────────────┘
+                                            │
+              ┌─────────────────────────────┼─────────────────────────┐
+              │                             │                         │
+              ▼                             ▼                         ▼
+┌─────────────────────────┐   ┌─────────────────────────┐   ┌─────────────────────────┐
+│    Scorer Worker 1      │   │    Scorer Worker 2      │   │    Scorer Worker N      │
+│  ┌───────────────────┐  │   │  ┌───────────────────┐  │   │  ┌───────────────────┐  │
+│  │ In-Memory Bandit  │  │   │  │ In-Memory Bandit  │  │   │  │ In-Memory Bandit  │  │
+│  │ + AST Cache       │  │   │  │ + AST Cache       │  │   │  │ + AST Cache       │  │
+│  └───────────────────┘  │   │  └───────────────────┘  │   │  └───────────────────┘  │
+└─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
+              │                             │                         │
+              └─────────────────────────────┼─────────────────────────┘
+                                            │
+                                            ▼
+                            ┌─────────────────────────────────────────┐
+                            │         REDIS CACHE                     │
+                            │   (Calibration thresholds, metrics)     │
+                            └─────────────────────────────────────────┘
+```
+
+### 8.5 Cost-Performance Trade-offs
+
+| Architecture | Throughput | Latency (P50) | Monthly Cost (Est.) | Complexity |
+|--------------|------------|---------------|---------------------|------------|
+| Current (subprocess) | 100 req/s | 500ms | $0 (local) | Low |
+| Ramdisk optimization | 500 req/s | 100ms | $0 (local) | Low |
+| In-memory workers | 2000 req/s | 20ms | $50/mo (1 VM) | Medium |
+| Microservice cluster | 10000 req/s | 50ms | $500/mo (3 VMs) | High |
+| Serverless (Lambda) | Burst to 50k | 200ms | Pay-per-use | Medium |
+
+---
+
+## 9. Deployment Options
 
 | Mode | Description | Use Case |
 |------|-------------|----------|

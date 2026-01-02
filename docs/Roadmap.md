@@ -63,10 +63,43 @@
 | Adversarial Testing | ⏳ Planned | Evasion prompts, obfuscation |
 | Multi-α Analysis | ⏳ Planned | α ∈ {0.01, 0.05, 0.10, 0.20} |
 | Latency Profiling | ⏳ Planned | P50/P95/P99 measurements |
+| **Real-World Vulnerability Calibration** | ⏳ Planned | Replace synthetic injection with CVE-based ground truth (see below) |
 | Offline Demo | ✅ Done | Works without API key |
 | Principal Docs | ✅ Done | PRD, Architecture, Risks, Roadmap |
 | CI Pipeline | ✅ Done | Lint + test on PR |
 | Unit Tests | ✅ Done | Scorer edge cases covered |
+
+### Real-World Vulnerability Calibration Strategy
+
+The current synthetic vulnerability injection (20% of calibration samples) provides a controlled baseline but does not represent real-world vulnerability distributions. Phase 2 will implement a more rigorous calibration data strategy:
+
+**Approach: GitHub CVE Commit Mining**
+```
+1. Query GitHub Advisory Database for Python CVEs (2020-2025)
+2. Extract commit SHAs that fixed each CVE
+3. Use git diff to isolate vulnerable code (pre-fix) vs. patched code
+4. Label: pre-fix = vulnerable (true positive), post-fix = clean
+5. Score both versions with Bandit to validate detection capability
+```
+
+**Target Dataset:**
+| Source | Expected Samples | Label |
+|--------|------------------|-------|
+| MBPP (clean) | 500 | Safe |
+| CVE fixes (pre-patch) | 200 | Vulnerable (true positive) |
+| CVE fixes (post-patch) | 200 | Safe (verified fix) |
+| SecurityEval | 100 | Mixed (ground truth labels) |
+
+**Benefits:**
+- Real vulnerabilities, not synthetic patterns
+- Ground truth labels from CVE database
+- Measures actual Bandit detection capability (not circular reasoning)
+- Enables precision/recall reporting, not just acceptance rate
+
+**Risks:**
+- CVE dataset may be biased toward detectable vulnerabilities
+- Commit context may be incomplete
+- Mitigation: Supplement with manual security review on sample
 
 ### Exit Criteria
 - [ ] Benchmark table with ≥3 α values

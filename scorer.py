@@ -1,3 +1,54 @@
+"""
+Scorer Module: Deterministic Security Scoring via Bandit
+=========================================================
+
+This module provides a non-conformity measure for code security by invoking
+Bandit (Python SAST) and mapping findings to a 0.0-1.0 risk score.
+
+TODO: PRODUCTION OPTIMIZATION
+-----------------------------
+The current implementation uses tempfile creation for each scoring request,
+which creates an I/O bottleneck at scale:
+
+    Current Throughput: ~100-200 req/s (disk I/O bound)
+    Target Throughput:  1000+ req/s (required for CI/CD integration)
+
+Bottleneck Analysis:
+    1. tempfile.NamedTemporaryFile() → filesystem write (~1-5ms)
+    2. Bandit subprocess spawn → process creation overhead (~10-50ms)
+    3. Bandit file read → filesystem read (~1-5ms)
+    4. os.remove() → filesystem delete (~1-2ms)
+
+Proposed Architecture for Scale:
+
+    Option A: Ramdisk (Quick Win)
+    -----------------------------
+    - Mount tmpfs at /dev/shm or dedicated ramdisk
+    - Set tempfile.tempdir = '/dev/shm/sentinel'
+    - Eliminates disk I/O, keeps process isolation
+    - Expected: ~500-1000 req/s
+
+    Option B: In-Memory AST Analysis (Maximum Performance)
+    -------------------------------------------------------
+    - Use bandit.core.BanditManager directly as library
+    - Parse code to AST in-memory (ast.parse())
+    - Run Bandit checks on AST without file I/O
+    - Expected: ~5000+ req/s
+    - Trade-off: Loses process isolation; crashes affect main process
+    - Mitigation: Watchdog thread with timeout; worker pool pattern
+
+    Option C: Microservice Architecture (Enterprise Scale)
+    -------------------------------------------------------
+    - Dedicated scorer microservice with worker pool
+    - gRPC or HTTP/2 for low-latency communication
+    - Horizontal scaling behind load balancer
+    - Expected: Linear scaling with replicas
+    - Trade-off: Operational complexity; network latency
+
+Decision: Process isolation (subprocess) chosen for MVP stability.
+See docs/Decision-log.md D-011 for full rationale.
+"""
+
 import subprocess
 import tempfile
 import os

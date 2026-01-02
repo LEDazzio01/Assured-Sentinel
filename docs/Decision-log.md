@@ -367,9 +367,55 @@ Use Streamlit for the interactive dashboard.
 
 ---
 
+### D-011: Bandit via Subprocess (Process Isolation)
+
+**Date:** 2025-12-22  
+**Status:** Accepted
+
+**Context:**  
+We needed to decide how to invoke the Bandit static analysis tool from our Python scoring module. The choice affects security posture, stability, performance, and production viability.
+
+**Decision:**  
+Invoke Bandit via subprocess with temporary file I/O for the MVP, accepting the performance trade-off in favor of security and stability guarantees.
+
+**Alternatives Considered:**
+| Alternative | Pros | Cons |
+|-------------|------|------|
+| **Subprocess + Temp File** | Process isolation, stability, security, simple error handling | I/O bottleneck at scale (~500ms latency), tempfile creation overhead |
+| In-Memory AST (Bandit library) | Faster (~10x), no I/O | Shared address space (crash risk), memory leaks possible, tighter coupling |
+| Ramdisk Temp Files | I/O eliminated, keeps isolation | Requires OS configuration, less portable |
+| Container Sidecar | Full isolation, language-agnostic | Latency overhead, operational complexity |
+
+**Rationale:**
+- **Security First**: Process isolation prevents Bandit crashes or memory corruption from affecting the main application
+- **Stability**: If Bandit hangs or segfaults, only the subprocess is affected; main process can timeout and fail-closed
+- **Simplicity**: Subprocess invocation is well-understood, debuggable, and has clear error semantics
+- **MVP Trade-off**: For Phase 1-2 volumes (<100 req/s), the ~500ms latency is acceptable
+
+**Production Optimization Path:**
+```
+MVP (Current):     Subprocess + Temp File  (~500ms, isolated)
+                          ↓
+Phase 3 Option A:  Ramdisk + Subprocess    (~50ms, isolated)
+                          ↓
+Phase 4 Option B:  In-Memory AST + Watchdog (~5ms, monitored)
+```
+
+**Consequences:**
+- Latency ceiling at ~1000 req/s with current architecture (I/O bound)
+- Clear upgrade path documented for production scale
+- Fail-closed semantics are simpler with subprocess (exit codes, timeouts)
+- Must monitor temp directory disk usage under load
+
+**References:**
+- [OWASP: Sandboxing Best Practices](https://owasp.org/www-community/controls/Sandboxing)
+- Similar pattern used by CodeQL, Semgrep in enterprise deployments
+
+---
+
 ## Pending Decisions
 
-### D-011: Multi-Signal Scoring Weights (Phase 3)
+### D-012: Multi-Signal Scoring Weights (Phase 3)
 **Status:** Proposed
 
 **Question:** How should we combine Bandit, Semgrep, and secret scanning scores?
@@ -382,7 +428,7 @@ Use Streamlit for the interactive dashboard.
 
 ---
 
-### D-012: API Authentication Method (Phase 3)
+### D-013: API Authentication Method (Phase 3)
 **Status:** Proposed
 
 **Question:** How should the REST API authenticate requests?

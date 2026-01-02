@@ -1,0 +1,55 @@
+# This CITATION.cff file was generated to support proper academic citation.
+# See https://citation-file-format.github.io/ for format specification.
+
+cff-version: 1.2.0
+title: "Assured Sentinel: Probabilistic Guardrails for AI-Generated Code"
+message: >-
+  If you use this software in your research, please cite it using
+  the metadata from this file.
+type: software
+authors:
+  - family-names: "Dazzio"
+    given-names: "LE"
+    alias: "LEDazzio01"
+repository-code: "https://github.com/LEDazzio01/Assured-Sentinel"
+url: "https://github.com/LEDazzio01/Assured-Sentinel"
+abstract: >-
+  Assured Sentinel implements probabilistic guardrails for AI-generated code
+  using Conformal Prediction to provide distribution-free, finite-sample
+  statistical guarantees on unsafe code acceptance rates. The system combines
+  deterministic SAST scoring (via Bandit) with calibrated thresholds to bound
+  the probability of accepting vulnerable code at a user-specified risk
+  tolerance level α.
+keywords:
+  - conformal-prediction
+  - ai-safety
+  - code-security
+  - static-analysis
+  - llm-guardrails
+  - python
+  - bandit
+  - sast
+license: MIT
+version: "1.0.0"
+date-released: "2026-01-02"
+references:
+  - type: article
+    authors:
+      - family-names: "Vovk"
+        given-names: "Vladimir"
+      - family-names: "Gammerman"
+        given-names: "Alex"
+      - family-names: "Shafer"
+        given-names: "Glenn"
+    title: "Algorithmic Learning in a Random World"
+    year: 2005
+    publisher:
+      name: "Springer"
+    notes: >-
+      Foundational text on Conformal Prediction theory that underpins
+      the statistical guarantees provided by Assured Sentinel.
+  - type: software
+    title: "Bandit"
+    url: "https://bandit.readthedocs.io/"
+    notes: >-
+      Python SAST tool used as the non-conformity measure for security scoring.

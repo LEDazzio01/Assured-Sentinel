@@ -78,6 +78,22 @@
 | **Mitigation** | Periodic recalibration; drift monitoring |
 | **Status** | ⏳ Planned for Phase 3 |
 
+---
+
+## 3.5 Theoretical Risks
+
+### R-THEORY-1: Exchangeability Violation in Correction Loop
+| Attribute | Value |
+|-----------|-------|
+| **Risk Level** | 🟡 Medium |
+| **Description** | Conformal Prediction's statistical guarantee ($P(\text{error}) \leq \alpha$) assumes exchangeability: calibration and test samples must be drawn from the same distribution. When the Analyst retries code generation after a REJECT, the new sample is **conditional on the previous failure**, violating this assumption. |
+| **Likelihood** | High (by design) |
+| **Impact** | Medium (weakened guarantee) |
+| **Theoretical Implication** | The error bound $(1-\alpha)$ strictly applies **only to the first attempt**. Subsequent attempts in the correction loop operate under a different (conditional) distribution, meaning the conformal guarantee does not formally hold for retries. The observed false acceptance rate on retries may exceed $\alpha$. |
+| **Mitigation** | 1. Document limitation clearly for users; 2. Track per-attempt acceptance rates separately; 3. Consider conservative threshold adjustment for retry attempts; 4. Future: Investigate adaptive conformal methods that account for feedback loops |
+| **References** | Vovk et al., "Algorithmic Learning in a Random World" (2005); Barber et al., "Conformal Prediction Under Covariate Shift" (2022) |
+| **Status** | ✅ Documented; mitigation planned for Phase 3 |
+
 ### R-OPS-2: Threshold Too Restrictive
 | Attribute | Value |
 |-----------|-------|

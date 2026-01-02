@@ -9,7 +9,21 @@
 
 ---
 
-## 📋 Executive Summary
+## � Strategic Context
+
+> **For reviewers evaluating architectural decision-making and research depth:**
+
+| Document | Description |
+|----------|-------------|
+| **[Decision Log](docs/Decision-log.md)** | Comprehensive record of technical and product decisions with alternatives considered, rationale, and trade-offs |
+| **[Deep Research Analysis](20251123_Assured_Sentinel_Deep_Research.pdf)** | Foundational research on Conformal Prediction, SAST tools, and statistical guarantees for AI safety |
+| **[Architecture](docs/Architecture.md)** | System design, component interactions, scalability constraints, and extensibility patterns |
+| **[Risk Register](docs/Risks.md)** | Security, operational, and theoretical risks with mitigations |
+| **[Product Roadmap](docs/Roadmap.md)** | Phased development plan from MVP through enterprise scale |
+
+---
+
+## �📋 Executive Summary
 
 | | |
 |---|---|
