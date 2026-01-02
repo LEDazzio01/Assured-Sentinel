@@ -1,0 +1,138 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assured-sentinel"
+version = "1.0.0"
+description = "Probabilistic Guardrails for AI-Generated Code using Conformal Prediction"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "LEDazzio01"}
+]
+keywords = [
+    "AI",
+    "code generation",
+    "security",
+    "conformal prediction",
+    "guardrails",
+    "static analysis",
+    "LLM"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24.0",
+    "bandit>=1.7.0",
+    "datasets>=2.14.0",
+    "streamlit>=1.28.0",
+    "semantic-kernel>=0.9.0",
+    "azure-identity>=1.14.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.0",
+    "black>=23.9.0",
+    "isort>=5.12.0",
+]
+azure = [
+    "azure-ai-agents>=1.0.0",
+    "azure-ai-projects>=1.0.0",
+    "aiohttp>=3.8.0",
+]
+
+[project.scripts]
+sentinel-demo = "demo:main"
+
+[project.urls]
+Homepage = "https://github.com/LEDazzio01/Assured-Sentinel"
+Documentation = "https://github.com/LEDazzio01/Assured-Sentinel#readme"
+Repository = "https://github.com/LEDazzio01/Assured-Sentinel.git"
+Issues = "https://github.com/LEDazzio01/Assured-Sentinel/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*", "docs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "setup.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E501", "W503", "E203"]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = [".git", ".venv", "venv", "build", "dist"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
