@@ -1,3 +1,4 @@
+import json
 import pickle
 import logging
 import os
@@ -8,12 +9,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger("Commander")
 
 class Commander:
-    def __init__(self, calibration_file="calibration_data.pkl", default_threshold=0.15):
+    def __init__(self, calibration_file="calibration_data.json", default_threshold=0.15):
         """
         Initializes the Commander with a calibrated risk threshold.
         
         Args:
-            calibration_file (str): Path to the pickle file containing q_hat.
+            calibration_file (str): Path to the JSON file containing q_hat.
             default_threshold (float): Fallback threshold if calibration file is missing.
         """
         self.threshold = self._load_threshold(calibration_file, default_threshold)
@@ -22,19 +23,34 @@ class Commander:
     def _load_threshold(self, filepath, default):
         """
         Loads the q_hat derived from Split Conformal Prediction calibration.
+        Supports both JSON (preferred) and legacy PKL formats.
         """
-        if os.path.exists(filepath):
+        # Try JSON first (preferred, safe format)
+        json_path = filepath if filepath.endswith('.json') else filepath.replace('.pkl', '.json')
+        if os.path.exists(json_path):
             try:
-                with open(filepath, 'rb') as f:
-                    data = pickle.load(f)
+                with open(json_path, 'r') as f:
+                    data = json.load(f)
+                    logger.info(f"Loaded calibration from JSON (calibrated: {data.get('calibrated_at', 'unknown')})")
                     return data['q_hat']
             except Exception as e:
-                logger.error(f"Failed to load calibration data: {e}")
+                logger.error(f"Failed to load JSON calibration data: {e}")
+        
+        # Fall back to legacy PKL (for backward compatibility)
+        pkl_path = filepath if filepath.endswith('.pkl') else "calibration_data.pkl"
+        if os.path.exists(pkl_path):
+            try:
+                with open(pkl_path, 'rb') as f:
+                    data = pickle.load(f)
+                    logger.warning("Loaded calibration from legacy PKL. Consider re-running calibration for JSON format.")
+                    return data['q_hat']
+            except Exception as e:
+                logger.error(f"Failed to load PKL calibration data: {e}")
                 return default
-        else:
-            # This warning is expected during the Day 4 build since we haven't run calibration yet
-            logger.warning(f"Calibration file '{filepath}' not found. Using DEFAULT threshold: {default}")
-            return default
+        
+        # No calibration file found
+        logger.warning(f"No calibration file found. Using DEFAULT threshold: {default}")
+        return default
 
     def verify(self, code_snippet):
         """

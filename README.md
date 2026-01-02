@@ -18,12 +18,12 @@
 | **Solution** | Deterministic SAST risk score (Bandit) + conformal calibration threshold + accept/reject gate |
 | **Guarantee** | Bounded unsafe code acceptance rate ≤ α with statistical validity |
 
-### Key Metrics (α = 0.10 on MBPP Benchmark)
+### Key Metrics (α = 0.10 on MBPP Baseline)
 
 | Metric | Value |
 |--------|-------|
 | Acceptance Rate | **80%** |
-| Unsafe Acceptance Bound | **≤10%** |
+| Scanner-Flagged Accept Bound | **≤10%** |
 | False Reject Rate | ~20% |
 | Median Latency | <500ms |
 | Cost per Eval | $0.00 (local Bandit) |
@@ -64,6 +64,46 @@ Launch interactively:
 python -m streamlit run dashboard.py
 ```
 </details>
+
+---
+
+## 📊 Evidence: Real Benchmark Results
+
+### Sample Verification Results (Threshold = 0.15)
+
+| Prompt Type | Code Sample | Score | Latency | Decision |
+|-------------|-------------|-------|---------|----------|
+| Clean code | `print("hello")` | 0.0 | 176ms | ✅ PASS |
+| Clean code | `def f(n): return 1 if n<=1 else n*f(n-1)` | 0.0 | 185ms | ✅ PASS |
+| Clean code | `[x*2 for x in range(10)]` | 0.0 | 175ms | ✅ PASS |
+| LOW severity | `import random; random.random()` | 0.1 | 209ms | ✅ PASS |
+| LOW severity | `password="secret"` | 0.1 | 183ms | ✅ PASS |
+| MEDIUM severity | `exec(user_input)` | 0.5 | 173ms | 🚫 REJECT |
+| MEDIUM severity | `eval(input())` | 0.5 | 173ms | 🚫 REJECT |
+| MEDIUM severity | `pickle.loads(x)` | 0.5 | 178ms | 🚫 REJECT |
+
+### Aggregate Metrics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **Acceptance Rate** | 80% | At α=0.10 on MBPP baseline |
+| **Scanner-Flagged Accept Rate** | ≤10% | Bounded by conformal guarantee |
+| **P50 Latency** | 180ms | Per verification, local Bandit |
+| **P95 Latency** | 290ms | Includes cold start |
+| **Cost per Verification** | $0.00 | No external API calls |
+| **False Reject Rate** | ~20% | Clean code incorrectly rejected |
+
+### Failure Case: Adversarial Evasion
+
+```python
+# This code is dangerous but may evade Bandit detection:
+__import__('os').system('rm -rf /')  # Uses dunder import
+getattr(__builtins__, 'eval')('...')  # Dynamic attribute access
+```
+
+**Current Behavior**: These patterns may receive score 0.0 (PASS) because Bandit doesn't flag them.
+
+**Mitigation**: Future versions will add multi-signal scoring (Semgrep, custom rules) to catch evasion patterns. See [Risks.md](docs/Risks.md#r-sec-1-evasion-via-syntax-obfuscation).
 
 ---
 
@@ -111,13 +151,15 @@ python -m streamlit run dashboard.py
 | **0.10** | **80%** | **≤10%** | **20%** |
 | 0.20 | 90% | ≤20% | 10% |
 
-**Interpretation:** At α=0.10, we accept 80% of generated code while guaranteeing that no more than 10% of accepted code violates security constraints.
+**Interpretation:** At α=0.10, we accept 80% of generated code while bounding the rate at which *scanner-flagged* code slips through to ≤10%. This is a statistical bound on Bandit findings, not a semantic security guarantee.
 
 ### Score Distribution & Calibrated Threshold
 
 ```
-Score Distribution (MBPP Calibration Set, n=100)
+Score Distribution (MBPP Baseline Set, n=100)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Note: MBPP is a general Python dataset, not security-labeled.
+Scores reflect Bandit findings, not ground-truth vulnerability labels.
 
    0.0 ████████████████████████████████████████ 80 (Clean)
    0.1 ████                                      4 (Low)
@@ -142,21 +184,37 @@ Score Distribution (MBPP Calibration Set, n=100)
 
 ## 🔬 Theoretical Foundation
 
-We implement **Split Conformal Prediction (SCP)** for distribution-free uncertainty quantification:
+We implement **Split Conformal Prediction (SCP)** for distribution-free uncertainty quantification.
 
-### The Guarantee
+### ⚠️ What Is Guaranteed vs. Not Guaranteed
+
+| ✅ Guaranteed | ❌ Not Guaranteed |
+|--------------|-------------------|
+| Statistical coverage on *scanner-defined* scores under exchangeability | Absence of vulnerabilities beyond scanner capability |
+| Bounded false acceptance rate *with respect to Bandit findings* | Robustness to distribution shift (new languages, frameworks) |
+| Reproducible, deterministic decisions | Semantic security or logical correctness |
+| Finite-sample validity (no asymptotics required) | Protection against adversarial evasion of Bandit |
+
+**Key Assumptions:**
+1. **Exchangeability**: Test samples come from same distribution as calibration set
+2. **Scanner fidelity**: Bandit accurately flags the vulnerability classes we care about
+3. **No distribution shift**: Production prompts resemble calibration prompts
+
+> **Honest framing**: This system bounds the rate at which *scanner-flagged* code is accepted. It does not guarantee "secure code" — only that acceptance decisions are calibrated against a known baseline distribution.
+
+### The Statistical Guarantee
 
 $$P(Y_{n+1} \in C(X_{n+1})) \geq 1 - \alpha$$
 
 Where:
 - $\alpha$ = risk tolerance (default: 0.10)
-- $C(X)$ = conformity set (accepted code)
-- $Y_{n+1}$ = new code sample
+- $C(X)$ = conformity set (accepted code with score ≤ q̂)
+- $Y_{n+1}$ = new code sample's scanner score
 
 ### Calibration Process
 
-1. **Collect Ground Truth**: Score known-safe samples from MBPP dataset
-2. **Inject Adversarial Samples**: Add synthetic vulnerabilities (20%)
+1. **Collect Baseline Distribution**: Score samples from MBPP dataset (general Python code, not security-labeled)
+2. **Inject Synthetic Vulnerabilities**: Add known-bad patterns (20%) to ensure threshold calibration
 3. **Compute Quantile**: Calculate q̂ at level $\lceil(n+1)(1-\alpha)\rceil/n$
 4. **Deploy Threshold**: Reject if score > q̂
 
@@ -202,6 +260,7 @@ AZURE_OPENAI_API_KEY="your-key-here"
 
 ```
 Assured-Sentinel/
+├── sentinel.py        # CLI interface
 ├── analyst.py         # LLM Agent (Azure OpenAI + Semantic Kernel)
 ├── commander.py       # Logic Gate (Conformal Prediction Verifier)
 ├── calibration.py     # Threshold calibration from MBPP dataset
@@ -219,7 +278,35 @@ Assured-Sentinel/
 ├── tests/
 │   └── test_scorer.py # Unit tests for scoring edge cases
 └── .github/workflows/
-    └── ci.yml         # Lint + Test pipeline
+    ├── ci.yml         # Lint + Test pipeline
+    └── pr-gate.yml    # PR security gate example
+```
+
+---
+
+## 🖥️ CLI Usage
+
+```bash
+# Verify a code snippet
+python sentinel.py verify "print('hello')"
+
+# Verify from file
+python sentinel.py verify --file script.py
+
+# Override threshold
+python sentinel.py verify --threshold 0.05 "eval(input())"
+
+# Output as JSON (for CI/CD integration)
+python sentinel.py verify --json "exec(x)"
+
+# Scan a directory
+python sentinel.py scan ./src --recursive
+
+# Run calibration
+python sentinel.py calibrate --alpha 0.1
+
+# Run demo
+python sentinel.py demo
 ```
 
 ---

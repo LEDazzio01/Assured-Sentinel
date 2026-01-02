@@ -62,6 +62,7 @@ azure = [
 ]
 
 [project.scripts]
+sentinel = "sentinel:main"
 sentinel-demo = "demo:main"
 
 [project.urls]

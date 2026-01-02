@@ -1,0 +1,149 @@
+name: Sentinel PR Gate
+
+# This workflow demonstrates how to use Assured Sentinel as a 
+# security gate in your CI/CD pipeline. It scans generated code
+# and blocks PRs that exceed the risk threshold.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.py'  # Only run on Python file changes
+
+jobs:
+  sentinel-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for diff
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install Sentinel
+        run: |
+          pip install bandit numpy
+          # In production, you'd install from PyPI:
+          # pip install assured-sentinel
+      
+      - name: Get Changed Python Files
+        id: changed-files
+        run: |
+          # Get list of changed Python files in this PR
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*.py' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "Changed files: $FILES"
+      
+      - name: Run Sentinel Scan
+        id: sentinel
+        run: |
+          # Scan each changed file
+          FAILED=0
+          PASSED=0
+          REPORT=""
+          
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            if [ -f "$file" ]; then
+              # Run Bandit and capture score
+              RESULT=$(bandit -f json -q "$file" 2>/dev/null || echo '{"results":[]}')
+              
+              # Count issues by severity
+              HIGH=$(echo "$RESULT" | python3 -c "import sys,json; print(len([r for r in json.load(sys.stdin).get('results',[]) if r.get('issue_severity')=='HIGH']))" 2>/dev/null || echo 0)
+              MEDIUM=$(echo "$RESULT" | python3 -c "import sys,json; print(len([r for r in json.load(sys.stdin).get('results',[]) if r.get('issue_severity')=='MEDIUM']))" 2>/dev/null || echo 0)
+              LOW=$(echo "$RESULT" | python3 -c "import sys,json; print(len([r for r in json.load(sys.stdin).get('results',[]) if r.get('issue_severity')=='LOW']))" 2>/dev/null || echo 0)
+              
+              # Determine score (same logic as scorer.py)
+              if [ "$HIGH" -gt 0 ]; then
+                SCORE="1.0"
+                STATUS="🚫 REJECT"
+                FAILED=$((FAILED + 1))
+              elif [ "$MEDIUM" -gt 0 ]; then
+                SCORE="0.5"
+                STATUS="🚫 REJECT"
+                FAILED=$((FAILED + 1))
+              elif [ "$LOW" -gt 0 ]; then
+                SCORE="0.1"
+                STATUS="✅ PASS"
+                PASSED=$((PASSED + 1))
+              else
+                SCORE="0.0"
+                STATUS="✅ PASS"
+                PASSED=$((PASSED + 1))
+              fi
+              
+              REPORT="$REPORT\n| $file | $SCORE | $STATUS | H:$HIGH M:$MEDIUM L:$LOW |"
+              echo "$STATUS: $file (score: $SCORE)"
+            fi
+          done
+          
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          
+          # Create markdown report
+          {
+            echo "## 🛡️ Assured Sentinel Security Report"
+            echo ""
+            echo "| File | Score | Status | Issues (H/M/L) |"
+            echo "|------|-------|--------|----------------|"
+            echo -e "$REPORT"
+            echo ""
+            echo "### Summary"
+            echo "- ✅ Passed: $PASSED"
+            echo "- 🚫 Rejected: $FAILED"
+            echo "- Threshold: 0.15 (scores ≤ 0.15 pass)"
+            echo ""
+            if [ "$FAILED" -gt 0 ]; then
+              echo "⚠️ **Action Required**: Fix security issues before merging."
+            else
+              echo "✅ **All checks passed**: Code meets security threshold."
+            fi
+          } > sentinel_report.md
+          
+          cat sentinel_report.md >> $GITHUB_STEP_SUMMARY
+      
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('sentinel_report.md', 'utf8');
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && c.body.includes('Assured Sentinel Security Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+      
+      - name: Fail if rejections
+        if: steps.sentinel.outputs.failed != '0'
+        run: |
+          echo "❌ Security gate failed: ${{ steps.sentinel.outputs.failed }} file(s) rejected"
+          exit 1
