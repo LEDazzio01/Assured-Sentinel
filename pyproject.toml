@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "assured-sentinel"
-version = "1.0.0"
+version = "2.0.0"
 description = "Probabilistic Guardrails for AI-Generated Code using Conformal Prediction"
 readme = "README.md"
 license = {text = "MIT"}
@@ -18,7 +18,9 @@ keywords = [
     "conformal prediction",
     "guardrails",
     "static analysis",
-    "LLM"
+    "LLM",
+    "SOLID",
+    "type-safe"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -33,6 +35,7 @@ classifiers = [
     "Topic :: Security",
     "Topic :: Software Development :: Quality Assurance",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -43,6 +46,8 @@ dependencies = [
     "semantic-kernel>=0.9.0",
     "azure-identity>=1.14.0",
     "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -50,10 +55,11 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0",
-    "flake8>=6.1.0",
+    "ruff>=0.1.0",
     "mypy>=1.5.0",
     "black>=23.9.0",
     "isort>=5.12.0",
+    "pre-commit>=3.5.0",
 ]
 azure = [
     "azure-ai-agents>=1.0.0",
@@ -62,31 +68,35 @@ azure = [
 ]
 
 [project.scripts]
-sentinel = "sentinel:main"
-sentinel-demo = "demo:main"
+sentinel = "assured_sentinel.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/LEDazzio01/Assured-Sentinel"
 Documentation = "https://github.com/LEDazzio01/Assured-Sentinel#readme"
 Repository = "https://github.com/LEDazzio01/Assured-Sentinel.git"
 Issues = "https://github.com/LEDazzio01/Assured-Sentinel/issues"
+Changelog = "https://github.com/LEDazzio01/Assured-Sentinel/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["*"]
+include = ["assured_sentinel*"]
 exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-data]
+assured_sentinel = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+asyncio_mode = "auto"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["assured_sentinel"]
 omit = [
     "tests/*",
     "setup.py",
@@ -99,11 +109,35 @@ exclude_lines = [
     "def __repr__",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+# Core modules should have high coverage; CLI/dashboard are excluded
+omit = [
+    "assured_sentinel/cli/*",
+    "assured_sentinel/dashboard/*",
+    "assured_sentinel/protocols.py",  # Protocol definitions only
 ]
 
-[tool.flake8]
-max-line-length = 120
-ignore = ["E501", "W503", "E203"]
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "C901",   # too complex
+]
 exclude = [
     ".git",
     "__pycache__",
@@ -112,6 +146,9 @@ exclude = [
     "build",
     "dist",
 ]
+
+[tool.ruff.isort]
+known-first-party = ["assured_sentinel"]
 
 [tool.black]
 line-length = 120
@@ -130,10 +167,22 @@ exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 120
+known_first_party = ["assured_sentinel"]
 skip = [".git", ".venv", "venv", "build", "dist"]
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
+warn_unused_ignores = true
+strict_optional = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
 ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true

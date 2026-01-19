@@ -1,84 +1,35 @@
-import streamlit as st
-import pandas as pd
-import asyncio
-import os
-import pickle
-from commander import Commander
-from analyst import Analyst  # Import the new Class
+"""
+Dashboard Module: Backward Compatibility Shim
+=============================================
 
-# Page Config
-st.set_page_config(page_title="Assured Sentinel", layout="wide")
-st.title("🛡️ Assured Sentinel: Conformal Security Guardrail")
+.. deprecated:: 2.0.0
+    This module is deprecated. Use `assured_sentinel.dashboard.app` instead.
 
-# --- CACHED RESOURCES (The Fix) ---
-@st.cache_resource
-def get_commander(threshold):
-    """Initializes Commander once per session/threshold change."""
-    return Commander(default_threshold=threshold)
+To run the dashboard, use::
 
-@st.cache_resource
-def get_analyst():
-    """Initializes Analyst connection once."""
-    return Analyst()
+    streamlit run assured_sentinel/dashboard/app.py
 
-# Sidebar: Configuration
-st.sidebar.header("Configuration")
-threshold_input = st.sidebar.slider("Risk Threshold (alpha)", 0.0, 1.0, 0.15)
+Or via CLI::
 
-# Load Calibration Data (Visualization)
-if os.path.exists("calibration_data.pkl"):
-    with open("calibration_data.pkl", "rb") as f:
-        cal_data = pickle.load(f)
-    st.sidebar.success(f"Calibration Loaded (n={len(cal_data['scores'])})")
-    
-    # Show Histogram
-    st.subheader("Calibration Distribution (Non-Conformity Scores)")
-    df_scores = pd.DataFrame(cal_data['scores'], columns=["Score"])
-    st.bar_chart(df_scores)
-else:
-    st.sidebar.warning("No calibration data found. Run calibration.py first.")
+    sentinel dashboard
 
-# Main Interface
-query = st.text_input("Enter a coding task:", "Write a function to calculate factorial.")
+This module re-exports the main function for backward compatibility.
+See CHANGELOG.md for migration guide.
+"""
 
-if st.button("Generate & Assure"):
-    # 1. Get Resources
-    commander = get_commander(threshold_input)
-    analyst = get_analyst()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🤖 Analyst (Generator)")
-        status_text = st.empty()
-        status_text.text("Generating...")
-        
-        # Run Async Code Generation
-        try:
-            # We use the class method now
-            candidate_code = asyncio.run(analyst.generate(query))
-            st.code(candidate_code, language='python')
-            status_text.text("Generation Complete.")
-        except Exception as e:
-            st.error(f"Analyst Error: {e}")
-            st.stop()
+import warnings
 
-    with col2:
-        st.markdown("### 👮 Commander (Verifier)")
-        
-        # Verify
-        decision = commander.verify(candidate_code)
-        
-        # Display Metrics
-        st.metric("Non-Conformity Score", f"{decision['score']:.4f}", delta_color="inverse")
-        st.metric("Threshold (q_hat)", f"{commander.threshold:.4f}")
-        
-        # Visual Decision
-        if decision['status'] == "PASS":
-            st.success("✅ ASSURED: Code fits within safety distribution.")
-        else:
-            st.error(f"🛑 REJECTED: {decision['reason']}")
-            st.warning("Triggering Correction Loop... (See Console/Logs)")
+warnings.warn(
+    "The 'dashboard' module is deprecated and will be removed in version 3.0. "
+    "Use 'assured_sentinel.dashboard.app' instead or run 'streamlit run assured_sentinel/dashboard/app.py'.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-st.markdown("---")
-st.caption("Assured Sentinel v1.0 | Split Conformal Prediction Architecture")
+# Re-export from new location for backward compatibility
+from assured_sentinel.dashboard.app import main
+
+__all__ = ["main"]
+
+if __name__ == "__main__":
+    main()
