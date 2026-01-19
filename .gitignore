@@ -2,3 +2,23 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
